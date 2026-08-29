@@ -7,6 +7,7 @@ import com.example.product_availability_service.product.exceptions.ProductNotFou
 import com.example.product_availability_service.product.mapper.ProductMapper;
 import com.example.product_availability_service.product.model.Product;
 import com.example.product_availability_service.product.repository.ProductRepository;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -39,6 +40,7 @@ public class ProductService {
         return productMapper.toResponse(savedProduct);
     }
 
+    @Cacheable(value = "products", key = "#sku")
     public ProductResponse findBySku(String sku) {
         Product product = productRepository.findBySku(sku)
                 .orElseThrow(() -> new ProductNotFoundException(sku));
