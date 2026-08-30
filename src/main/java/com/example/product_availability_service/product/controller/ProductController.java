@@ -61,4 +61,9 @@ public class ProductController {
     ) {
         return ResponseEntity.ok(productService.updateStock(sku, request));
     }
+
+    @GetMapping
+    public ResponseEntity<List<ProductResponse>> findAll() {
+        return ResponseEntity.ok(productService.findAll());
+    }
 }

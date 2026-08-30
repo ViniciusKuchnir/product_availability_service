@@ -11,6 +11,7 @@ import com.example.product_availability_service.product.model.Product;
 import com.example.product_availability_service.product.repository.ProductRepository;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 
@@ -117,6 +118,18 @@ public class ProductService {
                     );
                 })
                 .filter(Objects::nonNull)
+                .toList();
+    }
+
+    public List<ProductResponse> findAll() {
+        return productRepository
+                .findAll(Sort.by(
+                        Sort.Order
+                                .asc("name")
+                                .ignoreCase()
+                ))
+                .stream()
+                .map(productMapper::toResponse)
                 .toList();
     }
 
