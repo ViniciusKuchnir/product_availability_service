@@ -4,6 +4,7 @@ import com.example.product_availability_service.product.dto.CreateProductRequest
 import com.example.product_availability_service.product.dto.ProductResponse;
 import com.example.product_availability_service.product.dto.UpdateStockRequest;
 import com.example.product_availability_service.product.service.ProductService;
+import com.example.product_availability_service.product.service.ProductViewService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,9 +14,14 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("api/v1/products")
 public class ProductController {
     private final ProductService productService;
+    private final ProductViewService productViewService;
 
-    public ProductController(ProductService productService) {
+    public ProductController(
+            ProductService productService,
+            ProductViewService productViewService
+    ) {
         this.productService = productService;
+        this.productViewService = productViewService;
     }
 
     @PostMapping
@@ -31,7 +37,11 @@ public class ProductController {
     public ResponseEntity<ProductResponse> findBySku(
             @PathVariable String sku
     ) {
-        return ResponseEntity.ok(productService.findBySku(sku));
+        ProductResponse product = productService.findBySku(sku);
+
+        productViewService.registerView(sku);
+
+        return ResponseEntity.ok(product);
     }
 
     @PatchMapping("/{sku}/stock")
