@@ -8,6 +8,7 @@ import com.example.product_availability_service.product.repository.ProductReposi
 import com.example.product_availability_service.product.service.ProductService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Isolated;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
@@ -21,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
+@Isolated
 public class ProductCacheIntegrationTest {
 
     @Autowired
@@ -50,21 +52,21 @@ public class ProductCacheIntegrationTest {
     void shouldCacheProductAfterFirstLookup() {
         CreateProductRequest request =
                 new CreateProductRequest(
-                        "MON-34",
-                        "Monitor Ultrawide 34",
-                        "MONITORS",
-                        189990L,
+                        "MSO-01",
+                        "Mouse G501",
+                        "MOUSE",
+                        100000L,
                         10
                 );
 
         productService.create(request);
 
-        ProductResponse result = productService.findBySku("MON-34");
+        ProductResponse result = productService.findBySku("MSO-01");
 
-        assertThat(result.sku()).isEqualTo("MON-34");
+        assertThat(result.sku()).isEqualTo("MSO-01");
 
         assertThat(
-                redisTemplate.hasKey("products::MON-34")
+                redisTemplate.hasKey("products::MSO-01")
         ).isTrue();
     }
 
@@ -72,16 +74,16 @@ public class ProductCacheIntegrationTest {
     void shouldReturnCachedProductOnSubsequentLookup() {
         productService.create(
                 new CreateProductRequest(
-                        "MON-34",
-                        "Monitor Ultrawide 34",
-                        "MONITORS",
-                        189990L,
+                        "MSO-02",
+                        "Mouse G502",
+                        "MOUSE",
+                        100000L,
                         10
                 )
         );
 
         ProductResponse firstResponse =
-                productService.findBySku("MON-34");
+                productService.findBySku("MSO-02");
 
         assertThat(firstResponse.stockQuantity())
                 .isEqualTo(10);
@@ -92,11 +94,11 @@ public class ProductCacheIntegrationTest {
                 WHERE sku = ?
                 """,
                 99,
-                "MON-34"
+                "MSO-02"
         );
 
         ProductResponse secondResponse = productService
-                .findBySku("MON-34");
+                .findBySku("MSO-02");
 
         assertThat(secondResponse.stockQuantity())
                 .isEqualTo(10);
@@ -107,79 +109,92 @@ public class ProductCacheIntegrationTest {
     void shouldEvictCacheWhenStockIsUpdated() {
         productService.create(
                 new CreateProductRequest(
-                        "MON-34",
-                        "Monitor",
-                        "MONITORS",
-                        189990L,
+                        "MSO-03",
+                        "Mouse G503",
+                        "MOUSE",
+                        100000L,
                         10
                 )
         );
 
-        productService.findBySku("MON-34");
+        ProductResponse firstResponse =
+                productService.findBySku("MSO-03");
 
-        assertThat(
-                redisTemplate.hasKey("products::MON-34")
-        ).isTrue();
+        assertThat(firstResponse.stockQuantity())
+                .isEqualTo(10);
 
         productService.updateStock(
-                "MON-34",
+                "MSO-03",
                 new UpdateStockRequest(25)
         );
 
-        assertThat(
-                redisTemplate.hasKey("products::MON-34")
-        ).isFalse();
+        ProductResponse responseAfterUpdate =
+                productService.findBySku("MSO-03");
+
+        assertThat(responseAfterUpdate.stockQuantity())
+                .isEqualTo(25);
     }
 
     @Test
     void shouldReloadProductAfterCacheEviction() {
         productService.create(
                 new CreateProductRequest(
-                        "MON-34",
-                        "Monitor",
-                        "MONITORS",
-                        189990L,
+                        "MSO-04",
+                        "Mouse G504",
+                        "MOUSE",
+                        100000L,
                         10
                 )
         );
 
-        productService.findBySku("MON-34");
+        productService.findBySku("MSO-04");
 
         productService.updateStock(
-                "MON-34",
+                "MSO-04",
                 new UpdateStockRequest(25)
         );
 
-        ProductResponse result =
-                productService.findBySku("MON-34");
+        ProductResponse reloadedResponse =
+                productService.findBySku("MSO-04");
 
-        assertThat(result.stockQuantity())
+        assertThat(reloadedResponse.stockQuantity())
                 .isEqualTo(25);
 
-        assertThat(
-                redisTemplate.hasKey("products::MON-34")
-        ).isTrue();
+        jdbcTemplate.update("""
+            UPDATE products
+            SET stock_quantity = ?
+            WHERE sku = ?
+            """,
+                99,
+                "MSO-04"
+        );
+
+        ProductResponse cachedResponse =
+                productService.findBySku("MSO-04");
+
+        assertThat(cachedResponse.stockQuantity())
+                .isEqualTo(25);
     }
 
     @Test
     void shouldSetTtlForCachedProduct() {
         productService.create(
                 new CreateProductRequest(
-                        "MON-34",
-                        "Monitor",
-                        "MONITORS",
-                        189990L,
+                        "MSO-05",
+                        "Mouse G505",
+                        "MOUSE",
+                        100000L,
                         10
                 )
         );
 
-        productService.findBySku("MON-34");
+        productService.findBySku("MSO-05");
 
         Long ttl = redisTemplate.getExpire(
-                "products::MON-34"
+                "products::MSO-05"
         );
 
         assertThat(ttl)
-                .isBetween(250L, 300L); // 300 = 5 seconds
+                .isBetween(250L, 300L); // 300 seconds = 5 minutes
     }
 }
