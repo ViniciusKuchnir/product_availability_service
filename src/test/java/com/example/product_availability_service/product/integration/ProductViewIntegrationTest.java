@@ -6,12 +6,13 @@ import com.example.product_availability_service.product.dto.TrendingProductRespo
 import com.example.product_availability_service.product.repository.ProductRepository;
 import com.example.product_availability_service.product.service.ProductService;
 import com.example.product_availability_service.product.service.ProductViewService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Isolated;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.List;
 
@@ -19,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
+@Isolated
 public class ProductViewIntegrationTest {
 
     @Autowired
@@ -30,30 +32,44 @@ public class ProductViewIntegrationTest {
     @Autowired
     private StringRedisTemplate redisTemplate;
 
+    @Autowired
+    private ProductRepository productRepository;
+
+    @BeforeEach
+    void setUp() {
+        productRepository.deleteAll();
+
+        redisTemplate
+                .getConnectionFactory()
+                .getConnection()
+                .serverCommands()
+                .flushAll();
+    }
+
 
     @Test
     void shouldIncrementProductViews() {
         productService.create(
                 new CreateProductRequest(
-                        "MON-34",
-                        "Monitor",
-                        "MONITORS",
-                        189990L,
+                        "CPU-01",
+                        "CPU 01",
+                        "CPU",
+                        7000000L,
                         10
                 )
         );
 
-        productService.findBySku("MON-34");
-        productViewService.registerView("MON-34");
+        productService.findBySku("CPU-01");
+        productViewService.registerView("CPU-01");
 
-        productService.findBySku("MON-34");
-        productViewService.registerView("MON-34");
+        productService.findBySku("CPU-01");
+        productViewService.registerView("CPU-01");
 
         Double score = redisTemplate
                 .opsForZSet()
                 .score(
                         "product:views",
-                        "MON-34"
+                        "CPU-01"
                 );
 
         assertThat(score)
@@ -64,29 +80,29 @@ public class ProductViewIntegrationTest {
     void shouldReturnProductsOrderedByViews() {
         productService.create(
                 new CreateProductRequest(
-                        "MON-34",
-                        "Monitor",
-                        "MONITORS",
-                        189990L,
+                        "CPU-02",
+                        "CPU 02",
+                        "CPU",
+                        7000000L,
                         10
                 )
         );
 
         productService.create(
                 new CreateProductRequest(
-                        "MOUSE-G502",
-                        "Mouse G502",
-                        "MOUSE",
-                        100000L,
+                        "CPU-03",
+                        "CPU 03",
+                        "CPU",
+                        4500000L,
                         20
                 )
         );
 
         redisTemplate.opsForZSet()
-                .add("product:views", "MON-34", 10);
+                .add("product:views", "CPU-02", 10);
 
         redisTemplate.opsForZSet()
-                .add("product:views", "MOUSE-G502", 5);
+                .add("product:views", "CPU-03", 5);
 
         List<TrendingProductResponse> result =
                 productService.findTrendingProducts();
@@ -94,8 +110,8 @@ public class ProductViewIntegrationTest {
         assertThat(result)
                 .extracting(TrendingProductResponse::sku)
                 .containsExactly(
-                        "MON-34",
-                        "MOUSE-G502"
+                        "CPU-02",
+                        "CPU-03"
                 );
     }
 }
