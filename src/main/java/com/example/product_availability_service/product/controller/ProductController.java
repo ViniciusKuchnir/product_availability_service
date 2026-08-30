@@ -2,6 +2,7 @@ package com.example.product_availability_service.product.controller;
 
 import com.example.product_availability_service.product.dto.CreateProductRequest;
 import com.example.product_availability_service.product.dto.ProductResponse;
+import com.example.product_availability_service.product.dto.UpdateStockRequest;
 import com.example.product_availability_service.product.service.ProductService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -31,5 +32,13 @@ public class ProductController {
             @PathVariable String sku
     ) {
         return ResponseEntity.ok(productService.findBySku(sku));
+    }
+
+    @PatchMapping("/{sku}/stock")
+    public ResponseEntity<ProductResponse> updateStock(
+            @PathVariable String sku,
+            @Valid @RequestBody UpdateStockRequest request
+    ) {
+        return ResponseEntity.ok(productService.updateStock(sku, request));
     }
 }
