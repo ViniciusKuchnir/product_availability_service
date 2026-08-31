@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
+import org.springframework.data.redis.cache.RedisCacheWriter;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.serializer.GenericJacksonJsonRedisSerializer;
 import org.springframework.data.redis.serializer.JacksonJsonRedisSerializer;
@@ -26,18 +27,22 @@ public class RedisConfig {
                 new JacksonJsonRedisSerializer<>(ProductResponse.class);
 
         RedisCacheConfiguration configuration =
-                RedisCacheConfiguration
-                        .defaultCacheConfig()
+                RedisCacheConfiguration.defaultCacheConfig()
                         .entryTtl(Duration.ofMinutes(5))
                         .disableCachingNullValues()
                         .serializeValuesWith(
-                                RedisSerializationContext
-                                        .SerializationPair
+                                RedisSerializationContext.SerializationPair
                                         .fromSerializer(jsonSerializer)
                         );
 
+        RedisCacheWriter cacheWriter =
+                RedisCacheWriter.create(
+                        connectionFactory,
+                        RedisCacheWriter.RedisCacheWriterConfigurer::immediateWrites
+                );
+
         return RedisCacheManager
-                .builder(connectionFactory)
+                .builder(cacheWriter)
                 .cacheDefaults(configuration)
                 .build();
     }
