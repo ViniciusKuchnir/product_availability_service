@@ -1,5 +1,13 @@
 # Product Availability Service
 
+[![CI](https://github.com/ViniciusKuchnir/product_availability_service/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ViniciusKuchnir/product_availability_service/actions/workflows/ci.yml)
+![Java 21](https://img.shields.io/badge/Java-21-007396?logo=openjdk&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-API-6DB33F?logo=springboot&logoColor=white)
+![PostgreSQL 18](https://img.shields.io/badge/PostgreSQL-18-4169E1?logo=postgresql&logoColor=white)
+![Redis 8](https://img.shields.io/badge/Redis-8-DC382D?logo=redis&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)
+![Coverage](https://img.shields.io/badge/JaCoCo-90%25%2B-brightgreen)
+
 A production-oriented REST API for managing product availability, stock levels, and product popularity.
 
 The project was built as a focused backend service to demonstrate practical patterns with **Java 21**, **Spring Boot**, **PostgreSQL**, **Redis**, **Flyway**, **Testcontainers**, **Docker**, and automated CI.
